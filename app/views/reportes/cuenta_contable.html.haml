@@ -1,0 +1,51 @@
+.page-header
+  %h2
+    Entradas y salidas valorado
+    %small por cuenta contable
+
+    .pull-right
+      = form_tag cuenta_contable_reportes_path, method: :get, class: 'form-inline' do
+        .form-group
+          %label.sr-only{for: 'fecha-desde'} Desde
+          = text_field_tag :desde, params[:desde], class: 'form-control fecha-buscador', id: 'fecha-desde', placeholder: 'Desde fecha'
+        .form-group
+          %label.sr-only{for: 'fecha-hasta'} Hasta
+          = text_field_tag :hasta, params[:hasta], class: 'form-control fecha-buscador', id: 'fecha-hasta', placeholder: 'Hasta fecha'
+        %button{type: 'submit', class: 'btn btn-primary', title: 'Generar kardexes de todos los subartículos'}
+          %span.glyphicon.glyphicon-search
+
+- total_ingresos = 0
+- total_salidas = 0
+- total_saldo = 0
+%table.table.table-bordered.table-hovered.table-striped
+  %thead
+    %tr
+      %th No
+      %th Código
+      %th Cuenta contable
+      %th.number Ingresos
+      %th.number Salidas
+      %th.number Saldo
+  %tbody
+    - @materials.each_with_index do |cuenta, index|
+      %tr
+        %td= index + 1
+        %td= cuenta.code
+        %td= cuenta.description
+        %td.number
+          - parcial_ingresos = cuenta.valorado_ingresos(@desde, @hasta)
+          - total_ingresos += parcial_ingresos
+          = number_with_delimiter parcial_ingresos
+        %td.number
+          - parcial_salidas = cuenta.valorado_salidas(@desde, @hasta)
+          - total_salidas += parcial_salidas
+          = number_with_delimiter parcial_salidas
+        %td.number
+          - parcial_saldo = cuenta.valorado_saldo(@desde, @hasta)
+          - total_saldo += parcial_saldo
+          = number_with_delimiter parcial_saldo
+    %tr
+      %th.number{colspan: 3} Total
+      %th.number= number_with_delimiter total_ingresos
+      %th.number= number_with_delimiter total_salidas
+      %th.number= number_with_delimiter total_saldo

@@ -1,0 +1,101 @@
+- unless is_pdf?
+  %h3
+    Inventario
+    %span.text-muted desde
+    %strong #{params[:desde]}
+    %span.text-muted hasta
+    %strong #{params[:hasta]}
+    = link_to reports_materials_path(format: :pdf, desde: params[:desde], hasta: params[:hasta]), class: 'btn btn-primary' do
+      %span.glyphicon.glyphicon-print
+      Imprimir
+    .pull-right
+      %form.form-inline
+        .form-group
+          %label.sr-only{for: 'fecha-desde'} Desde
+          = text_field_tag :desde, params[:desde], class: 'form-control fecha-buscador', id: 'fecha-desde', placeholder: 'Desde fecha'
+        .form-group
+          %label.sr-only{for: 'fecha-hasta'} Hasta
+          = text_field_tag :hasta, params[:hasta], class: 'form-control fecha-buscador', id: 'fecha-hasta', placeholder: 'Hasta fecha'
+        %button{type: 'submit', class: 'btn btn-primary'}
+          %span.glyphicon.glyphicon-search
+#report_subarticles
+  %h3.text-center
+    %div INVENTARIO FÍSICO VALORADO DE #{entidad_sigla}
+    %small
+      LA PAZ, AL
+      = l(@hasta, format: :long).upcase
+
+%table.table.table-bordered.table-hover.table-condensed.valorado
+  %thead
+    %tr.vertical-align.info
+      %th.text-center{rowspan: "2"} CÓDIGO
+      %th.text-center{rowspan: "2"} DESCRIPCIÓN DE MATERIAL
+      %th.text-center{rowspan: "2"} UNIDAD
+      %th.text-center{rowspan: "2"} SALDOS AL #{l(@desde, format: :default)}
+      %th.text-center{colspan: "2"} ENTRADAS
+      %th.text-center{colspan: "2"} CANTIDADES
+      %th.text-center{rowspan: "2"} COSTO UNITARIO Bs.
+      %th.text-center{rowspan: "2"} SALDO Bs. AL #{l(@hasta, format: :default)}
+    %tr.vertical-align.info
+      %th.text-center EXIST. ALMAC
+      %th.text-center COSTO UNIT.
+      %th.text-center SALIDAS EXIST. ALMAC
+      %th.text-center SALDOS EXIST. ALMAC
+  %tbody
+    - total = 0
+    - @materials.each do |material|
+      %tr.double-thick
+        %th.text-center= material.code
+        %th{colspan: 8}= material.description.to_s.upcase
+        %th.number= number_with_delimiter material.subarticles.estado_activo.total(@hasta)
+      - material.subarticles.estado_activo.each do |subarticle|
+        - i_kardex = subarticle.saldo_inicial(@desde)
+        - f_kardex = subarticle.saldo_final(@hasta)
+        - kp = f_kardex.items.length
+        %tr
+          %td.text-center{rowspan: kp}= subarticle.code
+          %td{rowspan: kp}= subarticle.description
+          %td{rowspan: kp}= subarticle.unit.to_s.upcase
+          %td.number.contenedor{rowspan: kp}
+            %ul
+              - i_kardex.items.each_with_index do |p, i|
+                %li{title: p.costo_unitario}= mostrar_entero_float p.cantidad_saldo
+          - Transaccion.suma_entradas(f_kardex.items, @desde, @hasta)
+          - Transaccion.suma_salidas(f_kardex.items, @desde, @hasta)
+          - f_kardex.items.each_with_index do |price, index|
+            - total += price.importe_saldo
+            - if index > 0
+              %tr
+                %td.number= mostrar_entero_float price.cantidad_entrada
+                %td.number
+                  - if price.cantidad_entrada > 0
+                    = number_with_delimiter price.costo_unitario
+                  - else
+                    0
+                %td.number= mostrar_entero_float price.cantidad_salida
+                %td.number= mostrar_entero_float price.cantidad_saldo
+                %td.number= number_with_delimiter price.costo_unitario
+                %td.number= number_with_delimiter price.importe_saldo
+            - else
+              %td.number= mostrar_entero_float price.cantidad_entrada
+              %td.number
+                - if price.cantidad_entrada > 0
+                  = number_with_delimiter price.costo_unitario
+                - else
+                  0
+              %td.number= mostrar_entero_float price.cantidad_salida
+              %td.number= mostrar_entero_float price.cantidad_saldo
+              %td.number= number_with_delimiter price.costo_unitario
+              %td.number= number_with_delimiter price.importe_saldo
+    %tr
+      %th{colspan: 2} TOTALES
+      %th{colspan: 7}
+      %th.number= number_with_delimiter total
+
+- if is_pdf?
+  .text-center La Paz, #{l(@hasta, format: :long)}
+- else
+  .text-center.action-buttons
+    = link_to reports_materials_path(format: :pdf, desde: params[:desde], hasta: params[:hasta]), class: 'btn btn-lg btn-primary' do
+      %span.glyphicon.glyphicon-print
+      Imprimir

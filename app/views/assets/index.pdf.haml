@@ -1,0 +1,22 @@
+.title_pdf
+  %h3 #{t("assets.title.title")} #{' de Activos Fijos' if controller_name == 'bajas'}
+
+%table.table.table-condensed.table-bordered
+  %thead
+    %tr
+      %th= Asset.human_attribute_name('code')
+      %th= Asset.human_attribute_name('description')
+      %th= Asset.human_attribute_name('user')
+      %th= Asset.human_attribute_name('ubicacion')
+      %th= Baja.human_attribute_name('fecha')
+  %tbody
+    - @array.each do |asset|
+      %tr
+        %td= asset.code
+        %td= asset.description
+        %td= asset.user_name
+        %td= asset.ubicacion_detalle
+        - if asset.baja?
+          %td= asset.baja_fecha.present? ? I18n.l(asset.baja_fecha.to_date) : ''
+        - else
+          %td
